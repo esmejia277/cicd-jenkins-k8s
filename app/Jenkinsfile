@@ -2,14 +2,49 @@ pipeline {
     agent any
 
     environment {
-        
+        REGISTRY = "esmejia277"
+        IMAGE = "simple-app"
+        TAG = "v${BUILD_NUMBER}"
     }
 
     stages {
-        stage('Cehckout') {
+        stage('Checkout') {
             steps {
                 git 'https://github.com/esmejia277/cicd-jenkins-k8s.git'
             }
         }
+
+        stage('Build & Push Docker image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'Dockerhub',
+                                                  usernameVariable: 'DOCKER_USER',
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker build -t ${REGISTRY}/${IMAGE}:${TAG} app
+                        docker push ${REGISTRY}/${IMAGE}:${TAG}
+                    '''
+                }
+            }
+        }
+
+        state('Deploy') {
+            steps {
+                sh """
+                helm upgrade --install simple-api-dev app/k8s/helm/simple-api \
+                    -f app/k8s/helm/simple-api/values-dev.yaml \
+                    --set image.tag=${BUILD_NUMBER} \
+                    -n dev
+                """
+            }
+        }
+
+        // stage('Deploy to K8s') {
+        //     steps {
+        //         sh "kubectl apply -f app/k8s/deployments/deployment.yml"
+        //         sh "kubectl apply -f app/k8s/services/service.yml"
+        //     }
+        // }
+        
     }
 }

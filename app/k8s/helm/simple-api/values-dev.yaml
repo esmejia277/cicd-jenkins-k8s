@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: esmejia277/cicd
+  tag: "1.1"
+
+service:
+  type: NodePort
+  port: 8000
+  nodePort: 30080
+
+resources:
+  limits:
+    memory: "128Mi"
+    cpu: "500m"
