@@ -28,7 +28,7 @@ pipeline {
             }
         }
 
-        state('Deploy') {
+        stage('Deploy') {
             steps {
                 sh """
                 helm upgrade --install simple-api-dev app/k8s/helm/simple-api \
@@ -38,13 +38,6 @@ pipeline {
                 """
             }
         }
-
-        // stage('Deploy to K8s') {
-        //     steps {
-        //         sh "kubectl apply -f app/k8s/deployments/deployment.yml"
-        //         sh "kubectl apply -f app/k8s/services/service.yml"
-        //     }
-        // }
         
     }
 }
