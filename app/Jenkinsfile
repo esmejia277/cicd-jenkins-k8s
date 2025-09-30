@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        githubPush()
+    }
+
     environment {
         REGISTRY = "esmejia277"
         IMAGE = "simple-app"
@@ -33,7 +37,7 @@ pipeline {
                 sh """
                 helm upgrade --install simple-api-dev app/k8s/helm/simple-api \
                     -f app/k8s/helm/simple-api/values-dev.yaml \
-                    --set image.tag=${BUILD_NUMBER} \
+                    --set image.tag=${TAG}\
                     -n dev
                 """
             }
