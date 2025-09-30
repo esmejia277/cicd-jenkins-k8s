@@ -12,11 +12,11 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/esmejia277/cicd-jenkins-k8s.git'
-            }
-        }
+        // stage('Checkout') {
+        //     steps {
+        //         git 'https://github.com/esmejia277/cicd-jenkins-k8s.git'
+        //     }
+        // }
 
         stage('Build & Push Docker image') {
             steps {
