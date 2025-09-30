@@ -1,0 +1,15 @@
+pipeline {
+    agent any
+
+    environment {
+        
+    }
+
+    stages {
+        stage('Cehckout') {
+            steps {
+                git 'https://github.com/esmejia277/cicd-jenkins-k8s.git'
+            }
+        }
+    }
+}
