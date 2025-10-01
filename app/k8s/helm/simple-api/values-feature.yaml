@@ -5,9 +5,9 @@ image:
   tag: "1.1"
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 8000
-  nodePort: 30080
+  # nodePort: 30080
 
 resources:
   limits:
