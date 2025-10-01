@@ -8,7 +8,6 @@ pipeline {
     environment {
         REGISTRY = "esmejia277"
         IMAGE = "simple-app"
-        TAG = "v${BUILD_NUMBER}"
     }
 
     stages {
@@ -18,13 +17,18 @@ pipeline {
                                                   usernameVariable: 'DOCKER_USER',
                                                   passwordVariable: 'DOCKER_PASS')]) {
                     script {
-                        // Normaliza el nombre de la rama para usarlo en el tag
+                        // Normaliza la rama y genera release name único
                         def branch = env.GIT_BRANCH.replaceAll('/', '-')
+                        def shortBranch = branch.take(30) // evita nombres larguísimos
+                        def shortSha = env.GIT_COMMIT.take(8)
+                        env.RELEASE_NAME = "${IMAGE}-${shortBranch}-${shortSha}"
+                        env.IMAGE_TAG = "${shortSha}"
 
+                        // Build y push
                         sh """
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker build -t ${REGISTRY}/${IMAGE}:${TAG}-${branch}-${env.GIT_COMMIT} app
-                            docker push ${REGISTRY}/${IMAGE}:${TAG}-${branch}-${env.GIT_COMMIT}
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker build -t ${REGISTRY}/${IMAGE}:${IMAGE_TAG} app
+                        docker push ${REGISTRY}/${IMAGE}:${IMAGE_TAG}
                         """
                     }
                 }
@@ -35,23 +39,25 @@ pipeline {
             steps {
                 script {
                     def branch = env.GIT_BRANCH.replaceAll('/', '-')
-
+                    
                     if (branch.startsWith("feature-")) {
                         echo "Deploying feature branch: ${branch}"
                         sh """
-                        helm upgrade --install ${IMAGE}-${branch} app/k8s/helm/simple-api \
-                            -f app/k8s/helm/simple-api/values-feature.yaml \
+                        helm upgrade --install ${RELEASE_NAME} app/k8s/helm/simple-api \
+                            -f app/k8s/helm/simple-app/values-feature.yaml \
                             --set image.repository=${REGISTRY}/${IMAGE} \
-                            --set image.tag=${TAG}-${branch}-${env.GIT_COMMIT} \
+                            --set image.tag=${IMAGE_TAG} \
+                            --set commitSha=${IMAGE_TAG} \
                             -n feature
                         """
-                    } else if (branch == "origin-master") {
+                    } else if (branch == "main") {
                         echo "Deploying to PROD"
                         sh """
-                        helm upgrade --install ${IMAGE}-prod app/k8s/helm/simple-api \
-                            -f app/k8s/helm/simple-api/values-prod.yaml \
+                        helm upgrade --install ${RELEASE_NAME} app/k8s/helm/simple-api \
+                            -f app/k8s/helm/simple-app/values-prod.yaml \
                             --set image.repository=${REGISTRY}/${IMAGE} \
-                            --set image.tag=${TAG}-${branch}-${env.GIT_COMMIT} \
+                            --set image.tag=${IMAGE_TAG} \
+                            --set commitSha=${IMAGE_TAG} \
                             -n prod
                         """
                     } else {
