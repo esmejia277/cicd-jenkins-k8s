@@ -19,7 +19,7 @@ pipeline {
                                                   passwordVariable: 'DOCKER_PASS')]) {
                     script {
                         // Normaliza el nombre de la rama para usarlo en el tag
-                        def branch = env.GIT_BRANCH.replaceAll('/', '-')
+                        def branch = env.BRANCH_NAME.replaceAll('/', '-')
 
                         sh '''
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
@@ -34,7 +34,7 @@ pipeline {
         stage('Deploy with Helm') {
             steps {
                 script {
-                    def branch = env.GIT_BRANCH.replaceAll('/', '-')
+                    def branch = env.BRANCH_NAME.replaceAll('/', '-')
 
                     if (branch.startsWith("feature-")) {
                         echo "Deploying feature branch: ${branch}"
