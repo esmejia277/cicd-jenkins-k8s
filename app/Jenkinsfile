@@ -12,36 +12,53 @@ pipeline {
     }
 
     stages {
-        // stage('Checkout') {
-        //     steps {
-        //         git 'https://github.com/esmejia277/cicd-jenkins-k8s.git'
-        //     }
-        // }
-
         stage('Build & Push Docker image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'Dockerhub',
                                                   usernameVariable: 'DOCKER_USER',
                                                   passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker build -t ${REGISTRY}/${IMAGE}:${TAG} app
-                        docker push ${REGISTRY}/${IMAGE}:${TAG}
-                    '''
+                    script {
+                        // Normaliza el nombre de la rama para usarlo en el tag
+                        def branch = env.GIT_BRANCH.replaceAll('/', '-')
+
+                        sh '''
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker build -t ${REGISTRY}/${IMAGE}:${TAG}-${branch} app
+                            docker push ${REGISTRY}/${IMAGE}:${TAG}-${branch}
+                        '''
+                    }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy with Helm') {
             steps {
-                sh """
-                helm upgrade --install simple-api-dev app/k8s/helm/simple-api \
-                    -f app/k8s/helm/simple-api/values-dev.yaml \
-                    --set image.tag=${TAG}\
-                    -n dev
-                """
+                script {
+                    def branch = env.GIT_BRANCH.replaceAll('/', '-')
+
+                    if (branch.startsWith("feature-")) {
+                        echo "Deploying feature branch: ${branch}"
+                        sh """
+                        helm upgrade --install ${IMAGE}-${branch} app/k8s/helm/simple-api \
+                            -f app/k8s/helm/simple-api/values-feature.yaml \
+                            --set image.repository=${REGISTRY}/${IMAGE} \
+                            --set image.tag=${TAG}-${branch} \
+                            -n feature
+                        """
+                    } else if (branch == "main") {
+                        echo "Deploying to PROD"
+                        sh """
+                        helm upgrade --install ${IMAGE}-prod app/k8s/helm/simple-api \
+                            -f app/k8s/helm/simple-api/values-prod.yaml \
+                            --set image.repository=${REGISTRY}/${IMAGE} \
+                            --set image.tag=${TAG}-${branch} \
+                            -n prod
+                        """
+                    } else {
+                        echo "Branch ${branch} not configured for deployment"
+                    }
+                }
             }
         }
-        
     }
 }
