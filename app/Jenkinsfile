@@ -23,8 +23,8 @@ pipeline {
 
                         sh """
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker build -t ${REGISTRY}/${IMAGE}:${TAG}-${branch} app
-                            docker push ${REGISTRY}/${IMAGE}:${TAG}-${branch}
+                            docker build -t ${REGISTRY}/${IMAGE}:${TAG}-${branch}-${env.GIT_COMMIT} app
+                            docker push ${REGISTRY}/${IMAGE}:${TAG}-${branch}-${env.GIT_COMMIT}
                         """
                     }
                 }
@@ -42,7 +42,7 @@ pipeline {
                         helm upgrade --install ${IMAGE}-${branch} app/k8s/helm/simple-api \
                             -f app/k8s/helm/simple-api/values-feature.yaml \
                             --set image.repository=${REGISTRY}/${IMAGE} \
-                            --set image.tag=${TAG}-${branch} \
+                            --set image.tag=${TAG}-${branch}-${env.GIT_COMMIT} \
                             -n feature
                         """
                     } else if (branch == "origin-master") {
@@ -51,7 +51,7 @@ pipeline {
                         helm upgrade --install ${IMAGE}-prod app/k8s/helm/simple-api \
                             -f app/k8s/helm/simple-api/values-prod.yaml \
                             --set image.repository=${REGISTRY}/${IMAGE} \
-                            --set image.tag=${TAG}-${branch} \
+                            --set image.tag=${TAG}-${branch}-${env.GIT_COMMIT} \
                             -n prod
                         """
                     } else {
