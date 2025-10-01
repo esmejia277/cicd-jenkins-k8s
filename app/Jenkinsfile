@@ -50,7 +50,7 @@ pipeline {
                             --set commitSha=${IMAGE_TAG} \
                             -n feature
                         """
-                    } else if (branch == "main") {
+                    } else if (branch == "origin-master") {
                         echo "Deploying to PROD"
                         sh """
                         helm upgrade --install ${RELEASE_NAME} app/k8s/helm/simple-api \
