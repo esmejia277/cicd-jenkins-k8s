@@ -45,7 +45,7 @@ pipeline {
                             --set image.tag=${TAG}-${branch} \
                             -n feature
                         """
-                    } else if (branch == "main") {
+                    } else if (branch == "master") {
                         echo "Deploying to PROD"
                         sh """
                         helm upgrade --install ${IMAGE}-prod app/k8s/helm/simple-api \
